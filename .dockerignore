@@ -1,0 +1,9 @@
+# Files here are never sent to the Docker daemon during `docker build`, and
+# never copied into the image. We don't COPY source into this image at all,
+# but keeping this list tight means the "build context" stays small and fast,
+# and guarantees secrets/data can't accidentally be baked in later.
+.git
+.env
+data/
+__pycache__/
+*.pyc
