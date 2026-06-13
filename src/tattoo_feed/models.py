@@ -27,7 +27,7 @@ class MediaType(StrEnum):
     CAROUSEL_ALBUM = "CAROUSEL_ALBUM"
 
 
-def _normalize_handle(value: str) -> str:
+def normalize_handle(value: str) -> str:
     """Normalize an Instagram handle to its canonical bare form.
 
     Users naturally type ``@artist``; Instagram identifies the account as
@@ -74,7 +74,7 @@ class Post(BaseModel):
     @field_validator("artist_handle")
     @classmethod
     def _normalize(cls, value: str) -> str:
-        return _normalize_handle(value)
+        return normalize_handle(value)
 
 
 class Artist(BaseModel):
@@ -95,7 +95,7 @@ class Artist(BaseModel):
     @field_validator("handle")
     @classmethod
     def _normalize(cls, value: str) -> str:
-        normalized = _normalize_handle(value)
+        normalized = normalize_handle(value)
         if not normalized:
             raise ValueError("handle must not be empty")
         return normalized
@@ -130,7 +130,7 @@ class InspirationItem(BaseModel):
     @field_validator("artist_handle")
     @classmethod
     def _normalize(cls, value: str) -> str:
-        return _normalize_handle(value)
+        return normalize_handle(value)
 
 
 class Preference(BaseModel):
