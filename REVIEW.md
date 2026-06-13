@@ -84,7 +84,49 @@ Skim with a reviewer’s eye — this repo may go in front of an interviewer:
 
 ## Loop fills these in before stopping
 
-**Chunks completed:** [ e.g. 0–8 all green / 0–6 green, 7 blocked ]
+**Chunks completed:** 0–8, all green. One commit per chunk on `feat/auto-build`,
+each passing the full gate (ruff format + ruff check + mypy --strict + pytest)
+**inside the `tattoo-feed-dev` container, at 100% coverage** (floor is 90%). No
+`BLOCKERS.md` — nothing blocked. Two extra non-chunk commits precede chunk 0:
+`chore: init` (pre-existing) and `chore: add governance docs and Docker dev
+harness` (CLAUDE.md, PLAN.md, REVIEW.md, Dockerfile, .dockerignore, run-loop.sh).
 
-**Anything I flagged for you:** [ free text from the loop — surprises,
-assumptions made, anything in BLOCKERS.md, anything worth a closer look ]
+**Anything I flagged for you:**
+
+- **Image rendering is NOT verified.** Automated tests only assert the image
+  block is *structurally* valid (base64, `image/jpeg`, non-zero bytes, long edge
+  ≤640). Whether it actually displays — and right-way-up — is section 4's job.
+  The EXIF fixture uses orientation 6, so pay attention to whether real photos
+  come back correctly oriented (not sideways).
+
+- **Graph error-code mapping is best-effort and unverified against the live
+  API.** All HTTP is mocked, so the mapping from Instagram errors to typed
+  errors uses documented codes/subcodes (token=190, rate-limit∈{4,17,32},
+  not-professional subcode 2207013, not-found subcode 2207006). The first time
+  you hit a *real* error (e.g. add a personal account, or let the token expire),
+  confirm it maps to the right typed error and a readable message. If Instagram's
+  actual codes differ, the mapping in `graph/client.py` is the one place to tweak.
+
+- **Two deliberate deviations from PLAN §6 contracts (UX calls):**
+  1. `remove_artist`, `remove_from_inspiration`, and `reset_seen` return a short
+     confirmation *string* rather than `None`, so the chat client shows something
+     useful. Still thin wrappers, no logic.
+  2. `save_to_inspiration(post_id)` resolves the post by scanning the *current
+     feed* (no separate post cache). You can therefore only save a post that's
+     currently in the feed / was just shown by `next_inspiration`; saving an
+     unknown id raises `TattooFeedError` with a clear message. Worth confirming
+     this matches how you expect to use it.
+
+- **Missing credentials raise the base `TattooFeedError`** (not a dedicated
+  `ConfigError`), because PLAN §5 fixes the error hierarchy. The message tells
+  you to copy `.env.example` to `.env`.
+
+- **Dependency versions** were pinned to whatever was latest-stable in the build
+  container at install time (notably `mcp==1.27.2`, `pydantic==2.13.4`,
+  `Pillow==12.2.0`, `httpx==0.28.1`; dev: `ruff==0.15.17`, `mypy==2.1.0`,
+  `pytest==9.1.0`). All exact-pinned; `uv.lock` is committed.
+
+- **`.venv` gotcha:** the gate ran in the Linux container, so the `.venv` in this
+  folder is Linux-built. If you re-run the gate directly on macOS, do a fresh
+  `uv sync` first (the committed `uv.lock` is platform-independent; the `.venv`
+  is gitignored).
