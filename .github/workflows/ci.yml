@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main, feat/auto-build]
   pull_request:
 
 jobs:
@@ -11,24 +11,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Set up Python 3.12
-        run: uv python install 3.12
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
 
       - name: Install dependencies
         run: uv sync --frozen
 
-      # The canonical gate from CLAUDE.md §4 — these four must all exit 0.
-      - name: Ruff format check
+      - name: Format check
         run: uv run ruff format --check .
 
-      - name: Ruff lint
+      - name: Lint
         run: uv run ruff check .
 
-      - name: Mypy (strict)
+      - name: Type check
         run: uv run mypy --strict src
 
-      - name: Pytest with coverage
+      - name: Test + coverage
         run: uv run pytest -q --cov=src/tattoo_feed --cov-report=term-missing --cov-fail-under=90
